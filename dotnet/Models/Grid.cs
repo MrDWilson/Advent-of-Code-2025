@@ -135,6 +135,23 @@ public class Grid<T>(List<List<T>> _data)
         return locations.Where(x => !OutOfBounds(x));
     }
 
+    public IEnumerable<Point> GetSurroundingItemsDiagonally(Point point)
+    {
+        Point[] locations = 
+        [
+            new Point(point.X - 1, point.Y - 1),
+            new Point(point.X - 1, point.Y + 1),
+            new Point(point.X + 1, point.Y - 1),
+            new Point(point.X + 1, point.Y + 1),
+            new Point(point.X - 1, point.Y), 
+            new Point(point.X + 1, point.Y), 
+            new Point(point.X, point.Y - 1), 
+            new Point(point.X, point.Y + 1)
+        ];
+
+        return locations.Where(x => !OutOfBounds(x));
+    }
+
     public bool OutOfBounds(Point coords)
         => coords.X < 0 || coords.Y < 0 || coords.X >= _data.Count || coords.Y >= _data.First().Count;
 
