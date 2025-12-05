@@ -23,7 +23,7 @@ public class FileLoader(string? solutionsRoot = null) : IFileLoader
     public async Task<List<T>> LoadLines<T>(int day, SolutionType solutionType, RunType runType)
     {
         var raw = await LoadRaw<string>(day, solutionType, runType);
-        return [.. raw.Split("\n", StringSplitOptions.RemoveEmptyEntries).Select(ChangeType<T>)];
+        return [.. raw.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).Select(ChangeType<T>)];
     }
 
     public async Task<Grid<T>> LoadGrid<T>(int day, SolutionType solutionType, RunType runType)
