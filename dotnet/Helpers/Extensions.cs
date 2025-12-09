@@ -20,4 +20,13 @@ public static class Extensions
 
         yield return list;
     }
+
+    public static IEnumerable<(T, T)> UniquePairs<T>(this ICollection<T> items) where T : notnull
+    {
+        var unique = items.Distinct().ToArray();
+
+        for (int i = 0; i < unique.Length - 1; i++)
+            for (int j = i + 1; j < unique.Length; j++)
+                yield return (unique[i], unique[j]);
+    }
 }

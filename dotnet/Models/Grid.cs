@@ -6,6 +6,9 @@ public enum Direction { Up, Down, Left, Right }
 
 public class Grid<T>(List<List<T>> _data)
 {
+    public int RowCount => _data.Count;
+    public int ColumnCount => _data[0].Count;
+
     public T? this[Point point]
     {
         get
@@ -152,11 +155,119 @@ public class Grid<T>(List<List<T>> _data)
         return locations.Where(x => !OutOfBounds(x));
     }
 
+    public long GetArea(Point corner1, Point corner2)
+    {
+        var minX = Math.Max(0, Math.Min(corner1.X, corner2.X));
+        var maxX = Math.Min(_data.Count - 1, Math.Max(corner1.X, corner2.X));
+        var minY = Math.Max(0, Math.Min(corner1.Y, corner2.Y));
+        var maxY = Math.Min(_data[0].Count - 1, Math.Max(corner1.Y, corner2.Y));
+
+        if (minX > maxX || minY > maxY) return 0;
+
+        return (long)(maxX - minX + 1) * (maxY - minY + 1);
+    }
+
+    public IEnumerable<Point> GetAreaPoints(Point corner1, Point corner2)
+    {
+        var minX = Math.Max(0, Math.Min(corner1.X, corner2.X));
+        var maxX = Math.Min(_data.Count - 1, Math.Max(corner1.X, corner2.X));
+        var minY = Math.Max(0, Math.Min(corner1.Y, corner2.Y));
+        var maxY = Math.Min(_data[0].Count - 1, Math.Max(corner1.Y, corner2.Y));
+        
+        for (var x = minX; x <= maxX; x++)
+            for (var y = minY; y <= maxY; y++)
+                yield return new Point(x, y);
+    }
+
+    public bool AllInArea(Point corner1, Point corner2, Func<T?, bool> predicate)
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        var minX = Math.Max(0, Math.Min(corner1.X, corner2.X));
+        var maxX = Math.Min(RowCount - 1, Math.Max(corner1.X, corner2.X));
+        var minY = Math.Max(0, Math.Min(corner1.Y, corner2.Y));
+        var maxY = Math.Min(ColumnCount - 1, Math.Max(corner1.Y, corner2.Y));
+
+        for (var x = minX; x <= maxX; x++)
+        {
+            var row = _data[x];
+            for (var y = minY; y <= maxY; y++)
+            {
+                if (!predicate(row[y]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void FillEnclosedRegions(Func<T?, bool> isFillCandidate, T fillValue)
+    {
+        ArgumentNullException.ThrowIfNull(isFillCandidate);
+        ArgumentNullException.ThrowIfNull(fillValue);
+
+        var height = RowCount;
+        var width = ColumnCount;
+        var fillable = new bool[height, width];
+        var outside = new bool[height, width];
+        var queue = new Queue<Point>();
+        Point[] directions =
+        [
+            new(-1, 0),
+            new(1, 0),
+            new(0, -1),
+            new(0, 1)
+        ];
+
+        for (int x = 0; x < height; x++)
+        {
+            var row = _data[x];
+            for (int y = 0; y < width; y++)
+                fillable[x, y] = isFillCandidate(row[y]);
+        }
+
+        void EnqueueIfFillable(int x, int y)
+        {
+            if (x < 0 || y < 0 || x >= height || y >= width) return;
+            if (!fillable[x, y] || outside[x, y]) return;
+            outside[x, y] = true;
+            queue.Enqueue(new Point(x, y));
+        }
+
+        for (int x = 0; x < height; x++)
+        {
+            EnqueueIfFillable(x, 0);
+            EnqueueIfFillable(x, width - 1);
+        }
+
+        for (int y = 0; y < width; y++)
+        {
+            EnqueueIfFillable(0, y);
+            EnqueueIfFillable(height - 1, y);
+        }
+
+        while (queue.Count > 0)
+        {
+            var point = queue.Dequeue();
+            foreach (var direction in directions)
+                EnqueueIfFillable(point.X + direction.X, point.Y + direction.Y);
+        }
+
+        for (int x = 0; x < height; x++)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                if (fillable[x, y] && !outside[x, y])
+                    _data[x][y] = fillValue;
+            }
+        }
+    }
+
     public bool OutOfBounds(Point coords)
         => coords.X < 0 || coords.Y < 0 || coords.X >= _data.Count || coords.Y >= _data.First().Count;
 
     public string[] ToString(Func<T, string> func)
     {
-        return _data.Select(x => string.Join("", x.Select(func))).ToArray();
+        return [.. _data.Select(x => string.Join("", x.Select(func)))];
     }
 }
